@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Нова задача</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page-wrap">
+  <div class="card form-card">
+    <h1>Нова задача для сайту</h1>
+    <p class="subtitle">Одне повідомлення — одна задача</p>
+
+    <form id="taskForm" novalidate>
+
+      <!-- Відправник -->
+      <div class="section-title">Відправник</div>
+      <div class="field">
+        <label>Ваш email <span class="req">*</span></label>
+        <input type="email" name="sender_email" placeholder="name@company.com" required>
+      </div>
+
+      <!-- Тип задачі -->
+      <div class="section-title">Тип задачі</div>
+      <div class="field">
+        <div class="toggle" id="typeToggle">
+          <button type="button" class="tbtn active" data-type="new_page">Нова сторінка</button>
+          <button type="button" class="tbtn" data-type="edit_page">Редагувати сторінку</button>
+          <button type="button" class="tbtn" data-type="publication">Публікація / Новини</button>
+        </div>
+        <input type="hidden" name="type" value="new_page">
+      </div>
+
+      <!-- ══ Блок: Нова сторінка ══ -->
+      <div class="type-fields" id="fields-new_page">
+        <div class="section-title">Інформація про сторінку</div>
+
+        <div class="field">
+          <label>Назва сторінки <span class="req">*</span></label>
+          <input type="text" name="np_title" maxlength="100" placeholder="Коротка та чітка назва">
+        </div>
+        <div class="field">
+          <label>Опис задачі <span class="req">*</span></label>
+          <textarea name="np_description" rows="3" maxlength="500" placeholder="Що потрібно зробити?"></textarea>
+        </div>
+        <div class="field">
+          <label>Текст для сторінки <span class="opt">(необов'язково)</span></label>
+          <textarea name="np_body_text" rows="5" maxlength="5000" placeholder="Вставте готовий текст або залиште порожнім"></textarea>
+        </div>
+        <div class="field">
+          <label>Або завантажте файл з текстом</label>
+          <div class="upload-area" data-target="np_body_files">
+            <input type="file" name="body_files" multiple accept=".txt,.doc,.docx,.pdf">
+            <div class="upload-label">Натисніть або перетягніть файл</div>
+            <div class="upload-hint">DOC, DOCX, PDF, TXT</div>
+          </div>
+          <div class="file-list" id="np_body_files_list"></div>
+        </div>
+
+        <div class="section-title">Фото</div>
+        <div class="field">
+          <label>Посилання на фото <span class="opt">(Google Drive, хмара…)</span></label>
+          <input type="url" name="np_photo_links" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="field">
+          <label>Або завантажте фото</label>
+          <div class="upload-area" data-target="np_photos">
+            <input type="file" name="photos" multiple accept="image/*">
+            <div class="upload-label">Натисніть або перетягніть фото</div>
+            <div class="upload-hint">JPG, PNG, WEBP · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="np_photos_list"></div>
+        </div>
+
+        <div class="section-title">Додаткові файли</div>
+        <div class="field">
+          <label>Файли для розміщення на сторінці <span class="opt">(будь-які)</span></label>
+          <div class="upload-area" data-target="np_extra">
+            <input type="file" name="extra_files" multiple>
+            <div class="upload-label">Натисніть або перетягніть файли</div>
+            <div class="upload-hint">Будь-які файли · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="np_extra_list"></div>
+        </div>
+      </div>
+
+      <!-- ══ Блок: Редагувати сторінку ══ -->
+      <div class="type-fields hidden" id="fields-edit_page">
+        <div class="section-title">Інформація про сторінку</div>
+
+        <div class="field">
+          <label>Назва сторінки <span class="req">*</span></label>
+          <input type="text" name="ep_title" maxlength="100" placeholder="Назва сторінки яку редагуємо">
+        </div>
+        <div class="field">
+          <label>Посилання на сторінку <span class="req">*</span></label>
+          <input type="url" name="ep_page_url" placeholder="https://yoursite.com/page">
+        </div>
+        <div class="field">
+          <label>Опис задачі <span class="req">*</span></label>
+          <textarea name="ep_description" rows="3" maxlength="500" placeholder="Що саме потрібно змінити?"></textarea>
+        </div>
+        <div class="field">
+          <label>Новий текст <span class="opt">(необов'язково)</span></label>
+          <textarea name="ep_body_text" rows="5" maxlength="5000" placeholder="Вставте новий текст якщо є"></textarea>
+        </div>
+        <div class="field">
+          <label>Або завантажте файл з текстом</label>
+          <div class="upload-area" data-target="ep_body_files">
+            <input type="file" name="body_files" multiple accept=".txt,.doc,.docx,.pdf">
+            <div class="upload-label">Натисніть або перетягніть файл</div>
+            <div class="upload-hint">DOC, DOCX, PDF, TXT</div>
+          </div>
+          <div class="file-list" id="ep_body_files_list"></div>
+        </div>
+
+        <div class="section-title">Фото</div>
+        <div class="field">
+          <label>Посилання на фото</label>
+          <input type="url" name="ep_photo_links" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="field">
+          <label>Або завантажте фото</label>
+          <div class="upload-area" data-target="ep_photos">
+            <input type="file" name="photos" multiple accept="image/*">
+            <div class="upload-label">Натисніть або перетягніть фото</div>
+            <div class="upload-hint">JPG, PNG, WEBP · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="ep_photos_list"></div>
+        </div>
+
+        <div class="section-title">Додаткові файли</div>
+        <div class="field">
+          <label>Файли для розміщення <span class="opt">(будь-які)</span></label>
+          <div class="upload-area" data-target="ep_extra">
+            <input type="file" name="extra_files" multiple>
+            <div class="upload-label">Натисніть або перетягніть файли</div>
+            <div class="upload-hint">Будь-які файли · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="ep_extra_list"></div>
+        </div>
+      </div>
+
+      <!-- ══ Блок: Публікація ══ -->
+      <div class="type-fields hidden" id="fields-publication">
+        <div class="section-title">Інформація про публікацію</div>
+
+        <div class="field">
+          <label>Назва публікації <span class="req">*</span></label>
+          <input type="text" name="pub_title" maxlength="100" placeholder="Заголовок новини / події / факту">
+        </div>
+        <div class="field">
+          <label>Опис задачі <span class="req">*</span></label>
+          <textarea name="pub_description" rows="3" maxlength="500" placeholder="Короткий опис або вступ"></textarea>
+        </div>
+        <div class="field">
+          <label>Текст публікації <span class="opt">(необов'язково)</span></label>
+          <textarea name="pub_body_text" rows="5" maxlength="5000" placeholder="Повний текст публікації"></textarea>
+        </div>
+        <div class="field">
+          <label>Або завантажте файл з текстом</label>
+          <div class="upload-area" data-target="pub_body_files">
+            <input type="file" name="body_files" multiple accept=".txt,.doc,.docx,.pdf">
+            <div class="upload-label">Натисніть або перетягніть файл</div>
+            <div class="upload-hint">DOC, DOCX, PDF, TXT</div>
+          </div>
+          <div class="file-list" id="pub_body_files_list"></div>
+        </div>
+
+        <div class="section-title">Фото</div>
+        <div class="field">
+          <label>Посилання на фото</label>
+          <input type="url" name="pub_photo_links" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="field">
+          <label>Або завантажте фото</label>
+          <div class="upload-area" data-target="pub_photos">
+            <input type="file" name="photos" multiple accept="image/*">
+            <div class="upload-label">Натисніть або перетягніть фото</div>
+            <div class="upload-hint">JPG, PNG, WEBP · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="pub_photos_list"></div>
+        </div>
+
+        <div class="section-title">Додаткові файли</div>
+        <div class="field">
+          <label>Файли для публікації <span class="opt">(будь-які)</span></label>
+          <div class="upload-area" data-target="pub_extra">
+            <input type="file" name="extra_files" multiple>
+            <div class="upload-label">Натисніть або перетягніть файли</div>
+            <div class="upload-hint">Будь-які файли · до 10 МБ кожен</div>
+          </div>
+          <div class="file-list" id="pub_extra_list"></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:1.5rem">
+        <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Надіслати задачу</button>
+        <div class="status" id="formStatus"></div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script src="/js/form.js"></script>
+</body>
+</html>
