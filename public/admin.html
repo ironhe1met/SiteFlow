@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Адмінка</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Login -->
+<div class="page-wrap" id="loginWrap">
+  <div class="card" style="max-width:360px">
+    <h1>Адмінка</h1>
+    <div class="field" style="margin-top:1.5rem">
+      <label>Пароль</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autofocus>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Увійти</button>
+    <div class="status err" id="loginErr" style="display:none">Невірний пароль</div>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<div id="adminWrap" class="hidden">
+  <header class="admin-header">
+    <span class="admin-logo">Задачі</span>
+    <div class="admin-filters">
+      <button class="filter-btn active" data-status="all">Всі</button>
+      <button class="filter-btn" data-status="new">Нові</button>
+      <button class="filter-btn" data-status="in_progress">В роботі</button>
+      <button class="filter-btn" data-status="review">На перевірці</button>
+      <button class="filter-btn" data-status="done">Виконано</button>
+    </div>
+    <a href="/" class="btn btn-secondary" style="font-size:13px;padding:6px 14px">+ Нова задача</a>
+  </header>
+
+  <div class="admin-content">
+    <div id="tasksList"></div>
+  </div>
+</div>
+
+<!-- Task modal -->
+<div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+const STATUSES = {
+  new:         { label: 'Нова',         color: '#888' },
+  in_progress: { label: 'В роботі',    color: '#378ADD' },
+  review:      { label: 'На перевірці', color: '#BA7517' },
+  done:        { label: 'Виконано',    color: '#1D9E75' },
+};
+const TYPE_LABELS = {
+  new_page:    'Нова сторінка',
+  edit_page:   'Редагування',
+  publication: 'Публікація',
+};
+
+let allTasks = [];
+let activeFilter = 'all';
+
+async function doLogin() {
+  const pass = document.getElementById('loginPass').value;
+  const r = await fetch('/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pass })
+  });
+  if (r.ok) {
+    document.getElementById('loginWrap').classList.add('hidden');
+    document.getElementById('adminWrap').classList.remove('hidden');
+    loadTasks();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+document.getElementById('loginPass')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function loadTasks() {
+  const r = await fetch('/api/admin/tasks');
+  const { tasks } = await r.json();
+  allTasks = tasks;
+  renderTasks();
+}
+
+function renderTasks() {
+  const filtered = activeFilter === 'all'
+    ? allTasks
+    : allTasks.filter(t => t.status === activeFilter);
+
+  const list = document.getElementById('tasksList');
+  if (!filtered.length) {
+    list.innerHTML = '<p class="muted" style="padding:2rem">Задач немає</p>';
+    return;
+  }
+  list.innerHTML = filtered.map(t => {
+    const s = STATUSES[t.status] || STATUSES.new;
+    const date = new Date(t.created_at).toLocaleDateString('uk-UA');
+    return `
+    <div class="task-row" onclick="openTask('${t.id}')">
+      <div class="task-row-left">
+        <span class="type-tag">${TYPE_LABELS[t.type] || t.type}</span>
+        <span class="task-row-title">${t.title}</span>
+      </div>
+      <div class="task-row-right">
+        <span class="small muted">${date}</span>
+        <span class="status-badge" style="background:${s.color}22;color:${s.color};border:0.5px solid ${s.color}55">${s.label}</span>
+        <select class="status-select" onchange="changeStatus(event,'${t.id}')" onclick="event.stopPropagation()">
+          ${Object.entries(STATUSES).map(([k,v]) =>
+            `<option value="${k}"${t.status===k?' selected':''}>${v.label}</option>`
+          ).join('')}
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.status;
+    renderTasks();
+  });
+});
+
+async function changeStatus(e, id) {
+  const status = e.target.value;
+  await fetch(`/api/admin/tasks/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  const t = allTasks.find(t => t.id === id);
+  if (t) t.status = status;
+  renderTasks();
+}
+
+async function openTask(id) {
+  const r = await fetch(`/api/task/${id}`);
+  const { task, files } = await r.json();
+  const s = STATUSES[task.status] || STATUSES.new;
+  const photos = files.filter(f => f.category === 'photo');
+  const bodyF  = files.filter(f => f.category === 'body');
+  const extraF = files.filter(f => f.category === 'extra');
+
+  const fileChips = arr => arr.map(f =>
+    `<a class="file-chip" href="/uploads/${task.id}/${f.filename}" target="_blank">${f.original}</a>`
+  ).join('');
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="task-header">
+      <span class="badge">${TYPE_LABELS[task.type]||task.type}</span>
+      <span class="status-badge" style="background:${s.color}22;color:${s.color};border:0.5px solid ${s.color}55">${s.label}</span>
+    </div>
+    <h2 style="margin:8px 0 4px">${task.title}</h2>
+    <p class="muted small">Від: ${task.sender_email} · ${new Date(task.created_at).toLocaleString('uk-UA')}</p>
+    <div class="divider"></div>
+    <div class="label">Опис задачі</div>
+    <p style="margin-bottom:1rem">${task.description}</p>
+    ${task.body_text ? `<div class="label">Текст</div><p style="white-space:pre-wrap;margin-bottom:1rem">${task.body_text}</p>` : ''}
+    ${task.page_url  ? `<div class="label">Сторінка</div><a href="${task.page_url}" target="_blank" style="display:block;margin-bottom:1rem">${task.page_url}</a>` : ''}
+    ${task.photo_links ? `<div class="label">Посилання на фото</div><a href="${task.photo_links}" target="_blank" style="display:block;margin-bottom:1rem">${task.photo_links}</a>` : ''}
+    ${photos.length  ? `<div class="label">Фото</div><div class="file-chips" style="margin-bottom:1rem">${fileChips(photos)}</div>` : ''}
+    ${bodyF.length   ? `<div class="label">Файли тексту</div><div class="file-chips" style="margin-bottom:1rem">${fileChips(bodyF)}</div>` : ''}
+    ${extraF.length  ? `<div class="label">Додаткові файли</div><div class="file-chips" style="margin-bottom:1rem">${fileChips(extraF)}</div>` : ''}
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-secondary" href="/task/${task.id}" target="_blank">Відкрити публічну сторінку</a>
+      <button class="btn" style="color:#e24b4a;border-color:#e24b4a" onclick="deleteTask('${task.id}')">Видалити</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (!e || e.target.id === 'modalOverlay') {
+    document.getElementById('modalOverlay').classList.add('hidden');
+  }
+}
+
+async function deleteTask(id) {
+  if (!confirm('Видалити задачу?')) return;
+  await fetch(`/api/admin/tasks/${id}`, { method: 'DELETE' });
+  document.getElementById('modalOverlay').classList.add('hidden');
+  loadTasks();
+}
+</script>
+</body>
+</html>
