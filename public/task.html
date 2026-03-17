@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Задача</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page-wrap">
+  <div class="card" id="taskCard" style="max-width:640px">
+    <div id="loadingState">
+      <p class="muted">Завантаження...</p>
+    </div>
+    <div id="taskContent" class="hidden">
+      <div class="task-header">
+        <span class="badge" id="taskType"></span>
+        <span class="status-badge" id="taskStatus"></span>
+      </div>
+      <h1 id="taskTitle"></h1>
+      <p class="muted small" id="taskDate"></p>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-steps" id="progressSteps"></div>
+
+      <div class="divider"></div>
+
+      <div class="field-group" id="taskDesc"></div>
+      <div class="field-group hidden" id="taskBodyWrap">
+        <div class="label">Текст</div>
+        <div id="taskBody"></div>
+      </div>
+      <div class="field-group hidden" id="taskPageWrap">
+        <div class="label">Сторінка</div>
+        <a id="taskPageUrl" href="#" target="_blank"></a>
+      </div>
+      <div class="field-group hidden" id="taskPhotoWrap">
+        <div class="label">Посилання на фото</div>
+        <a id="taskPhotoLinks" href="#" target="_blank"></a>
+      </div>
+
+      <div class="field-group hidden" id="taskFilesWrap">
+        <div class="label">Файли</div>
+        <div id="taskFiles" class="file-chips"></div>
+      </div>
+    </div>
+    <div id="errorState" class="hidden">
+      <p class="muted">Задачу не знайдено.</p>
+      <a href="/" class="btn btn-secondary" style="margin-top:1rem;display:inline-block">На головну</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUSES = {
+  new:         { label: 'Нова',        step: 0, color: '#888' },
+  in_progress: { label: 'В роботі',   step: 1, color: '#378ADD' },
+  review:      { label: 'На перевірці',step: 2, color: '#BA7517' },
+  done:        { label: 'Виконано',   step: 3, color: '#1D9E75' },
+};
+const STEPS = ['Нова','В роботі','На перевірці','Виконано'];
+const TYPE_LABELS = {
+  new_page:    'Нова сторінка',
+  edit_page:   'Редагування',
+  publication: 'Публікація',
+};
+
+const id = location.pathname.split('/').pop();
+
+fetch(`/api/task/${id}`)
+  .then(r => r.json())
+  .then(({ ok, task, files }) => {
+    document.getElementById('loadingState').classList.add('hidden');
+    if (!ok) { document.getElementById('errorState').classList.remove('hidden'); return; }
+
+    document.title = task.title;
+    document.getElementById('taskContent').classList.remove('hidden');
+    document.getElementById('taskTitle').textContent = task.title;
+    document.getElementById('taskType').textContent = TYPE_LABELS[task.type] || task.type;
+    document.getElementById('taskDate').textContent =
+      'Створено: ' + new Date(task.created_at).toLocaleString('uk-UA');
+
+    const s = STATUSES[task.status] || STATUSES.new;
+    const sb = document.getElementById('taskStatus');
+    sb.textContent = s.label;
+    sb.style.background = s.color + '22';
+    sb.style.color = s.color;
+    sb.style.border = `0.5px solid ${s.color}55`;
+
+    // Progress bar
+    const pct = (s.step / (STEPS.length - 1)) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressBar').style.background = s.color;
+
+    const stepsEl = document.getElementById('progressSteps');
+    STEPS.forEach((name, i) => {
+      const el = document.createElement('span');
+      el.className = 'step' + (i <= s.step ? ' done' : '');
+      el.textContent = name;
+      if (i === s.step) el.style.color = s.color;
+      stepsEl.appendChild(el);
+    });
+
+    // Fields
+    document.getElementById('taskDesc').innerHTML =
+      `<div class="label">Опис задачі</div><p>${task.description}</p>`;
+
+    if (task.body_text) {
+      document.getElementById('taskBodyWrap').classList.remove('hidden');
+      document.getElementById('taskBody').textContent = task.body_text;
+    }
+    if (task.page_url) {
+      document.getElementById('taskPageWrap').classList.remove('hidden');
+      const a = document.getElementById('taskPageUrl');
+      a.href = task.page_url; a.textContent = task.page_url;
+    }
+    if (task.photo_links) {
+      document.getElementById('taskPhotoWrap').classList.remove('hidden');
+      const a = document.getElementById('taskPhotoLinks');
+      a.href = task.photo_links; a.textContent = task.photo_links;
+    }
+    if (files?.length) {
+      document.getElementById('taskFilesWrap').classList.remove('hidden');
+      const wrap = document.getElementById('taskFiles');
+      files.forEach(f => {
+        const chip = document.createElement('a');
+        chip.className = 'file-chip';
+        chip.href = `/uploads/${task.id}/${f.filename}`;
+        chip.target = '_blank';
+        chip.textContent = f.original;
+        wrap.appendChild(chip);
+      });
+    }
+  })
+  .catch(() => {
+    document.getElementById('loadingState').classList.add('hidden');
+    document.getElementById('errorState').classList.remove('hidden');
+  });
+</script>
+</body>
+</html>
